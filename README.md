@@ -16,8 +16,12 @@ Mở `index.html` bằng trình duyệt là chơi được (cần mạng để t
 
 ## Điều khiển trên máy tính
 
-- `W A S D`: di chuyển, mũi tên trái/phải: xoay, `Space`: bắn
-- `1` đến `5`: đổi súng, `Q`: ngắm, `E`: BOM, `R`: NUKE
+- Bấm **Bắt đầu** để khóa chuột, `Esc` để nghỉ.
+- `W A S D`: di chuyển, **chuột**: xoay ngắm
+- **Chuột trái**: bắn, **giữ chuột phải**: ngắm xa
+- **Lăn chuột** hoặc `1` đến `5`: đổi súng
+- `E`: BOM, `R`: NUKE
+- Nếu trình duyệt không cho khóa chuột: kéo chuột để xoay, `Space` để bắn, mũi tên trái/phải để xoay
 
 ## Chơi trên web bằng GitHub Pages
 

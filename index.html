@@ -72,6 +72,7 @@
   .nuke { position: absolute; right: 16px; bottom: 124px; width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid rgba(255, 214, 90, .85); background: rgba(60, 20, 8, .8); color: #ffd65a; font: 800 11px/1 var(--mono); letter-spacing: .04em; cursor: pointer; touch-action: none; }
   .nuke.cd { opacity: .45; }
   .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .keys { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; padding-inline: 12px; pointer-events: none; font: 500 11px/1.4 var(--mono); color: rgba(230, 240, 243, .62); text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
   .scope { position: absolute; inset: 0; pointer-events: none; display: none; background: radial-gradient(circle 31vmin at 50% 50%, transparent 98%, #000 100%); }
   .scope.on { display: block; }
   .scope::before { content: ""; position: absolute; left: calc(50% - 31vmin); right: calc(50% - 31vmin); top: 50%; height: 1px; background: rgba(0, 0, 0, .85); }
@@ -133,6 +134,7 @@
   <div class="hitdir" id="hitdir"></div>
   <div class="scope" id="scope"></div>
   <div class="flash" id="flash"></div>
+  <div class="keys" id="keys" hidden>W A S D đi · Chuột xoay ngắm · Chuột trái bắn · Chuột phải ngắm xa · Lăn chuột hoặc 1-5 đổi súng · E bom · R nuke · Esc nghỉ</div>
   <div class="banner" id="banner"></div>
   <canvas class="radar" id="radar" width="176" height="176"></canvas>
   <div class="stick" id="stick" aria-label="Cần di chuyển"><i id="knob"></i></div>
@@ -159,6 +161,7 @@
       <div><span class="chip acc">Súng</span>Chạm ô bên phải để đổi súng, NGẮM để phóng to</div>
       <div><span class="chip hot">BOM</span>Gọi máy bay ném bom vào chỗ tâm ngắm, hồi 40 giây. Tránh vòng đỏ</div>
       <div><span class="chip hot">NUKE</span>Siêu bom từ trên trời, vòng đỏ rất to. Chạy thật xa, hồi 75 giây</div>
+      <div><span class="chip cy">Máy tính</span>Bấm Bắt đầu để khóa chuột. Nếu chuột không khóa được thì kéo chuột để xoay, Space để bắn</div>
       <div class="hint">Kéo ngón tay ngay trên nút BẮN để vừa bắn vừa xoay. Xoay ngang điện thoại sẽ dễ chơi hơn.</div>
     </div>
     <p class="body" id="ovBody"></p>
@@ -172,7 +175,8 @@
   var $ = function (id) { return document.getElementById(id); };
   var stage = $('stage'), ov = $('ov'), ovKicker = $('ovKicker'), ovTitle = $('ovTitle'), ovBody = $('ovBody'), ovBtn = $('ovBtn'), legend = $('legend'), sndBtn = $('snd');
   var elScore = $('score'), elWave = $('wave'), hpBar = $('hpBar'), hpBox = $('hpBox'), cross = $('cross'), hurtEl = $('hurt'), hitdirEl = $('hitdir'), banner = $('banner'), fireBtn = $('fire'), radar = $('radar');
-  var stick = $('stick'), knob = $('knob'), adsBtn = $('ads'), scopeEl = $('scope'), wbar = $('wbar'), airBtn = $('air'), nukeBtn = $('nuke'), flashEl = $('flash');
+  var stick = $('stick'), knob = $('knob'), adsBtn = $('ads'), scopeEl = $('scope'), wbar = $('wbar'), airBtn = $('air'), nukeBtn = $('nuke'), flashEl = $('flash'), keysEl = $('keys');
+  var desktop = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
   var wbtns = document.querySelectorAll('.wb');
   // Chặn zoom bằng hai ngón và chạm đúp để không bị phóng to nhầm khi chơi
   document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
@@ -460,9 +464,9 @@
   function showOverlay(kicker, title, body, btn, bad, withLegend) {
     ovKicker.textContent = kicker; ovTitle.textContent = title; ovTitle.classList.toggle('bad', !!bad);
     ovBody.innerHTML = body; ovBody.hidden = !body; legend.hidden = !withLegend;
-    ovBtn.textContent = btn; ov.hidden = false; setAds(false); fireBtn.hidden = true; stick.hidden = true; adsBtn.hidden = true; airBtn.hidden = true; nukeBtn.hidden = true; wbar.hidden = true; radar.hidden = true; cross.hidden = true; ovBtn.focus({ preventScroll: true });
+    ovBtn.textContent = btn; ov.hidden = false; try { if (document.exitPointerLock) document.exitPointerLock(); } catch (x) {} keysEl.hidden = true; setAds(false); fireBtn.hidden = true; stick.hidden = true; adsBtn.hidden = true; airBtn.hidden = true; nukeBtn.hidden = true; wbar.hidden = true; radar.hidden = true; cross.hidden = true; ovBtn.focus({ preventScroll: true });
   }
-  function hideOverlay() { ov.hidden = true; fireBtn.hidden = false; stick.hidden = false; adsBtn.hidden = false; airBtn.hidden = false; nukeBtn.hidden = false; wbar.hidden = false; radar.hidden = false; cross.hidden = false; }
+  function hideOverlay() { ov.hidden = true; keysEl.hidden = !desktop; fireBtn.hidden = false; stick.hidden = desktop; adsBtn.hidden = false; airBtn.hidden = false; nukeBtn.hidden = false; wbar.hidden = false; radar.hidden = false; cross.hidden = false; }
   function ready() {
     state = 'ready';
     showOverlay('Hạ hết bot trong khu', 'Trạm Gác', best ? 'Kỷ lục: <strong>' + best + '</strong>' : '', 'Bắt đầu', false, true);
@@ -486,7 +490,7 @@
     var body = 'Điểm <strong>' + score + '</strong> · Đợt <strong>' + wave + '</strong> · Hạ <strong>' + kills + '</strong> bot<br>' + (newBest ? 'Kỷ lục mới' : 'Kỷ lục <strong>' + best + '</strong>');
     showOverlay('Trạm thất thủ', 'Hết giáp', body, 'Chơi lại', true, false);
   }
-  ovBtn.addEventListener('click', function () { if (state === 'pause') resume(); else start(); });
+  ovBtn.addEventListener('click', function () { if (state === 'pause') resume(); else start(); lockMouse(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); });
 
   /* ---------- Điều khiển ---------- */
@@ -523,6 +527,35 @@
   adsBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); if (state === 'play') setAds(!ads); });
   airBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); callStrike(); });
   nukeBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); callNuke(); });
+
+  // Chế độ máy tính: khóa chuột để ngắm, chuột trái bắn, chuột phải ngắm xa, lăn chuột đổi súng
+  var locked = false, lastWheel = 0;
+  function lockMouse() {
+    if (!desktop || locked || !cv.requestPointerLock) return;
+    try { var pr = cv.requestPointerLock(); if (pr && pr.catch) pr.catch(function () {}); } catch (x) {}
+  }
+  document.addEventListener('pointerlockchange', function () { locked = document.pointerLockElement === cv; if (!locked && state === 'play') pause(); });
+  document.addEventListener('pointerlockerror', function () { locked = false; });
+  document.addEventListener('mousemove', function (e) {
+    if (!locked || state !== 'play') return;
+    yaw -= e.movementX * 0.0022 / zk(); pitch -= e.movementY * 0.0022 / zk();
+    pitch = Math.max(-0.45, Math.min(1.15, pitch));
+  });
+  document.addEventListener('mousedown', function (e) {
+    if (!desktop || state !== 'play') return;
+    if (!locked) { if (e.target === cv) lockMouse(); return; }
+    if (e.button === 0) firing = true; else if (e.button === 2) setAds(true);
+  });
+  document.addEventListener('mouseup', function (e) {
+    if (!desktop || !locked) return;
+    if (e.button === 0) firing = false; else if (e.button === 2) setAds(false);
+  });
+  document.addEventListener('contextmenu', function (e) { if (desktop) e.preventDefault(); });
+  window.addEventListener('wheel', function (e) {
+    if (!desktop || state !== 'play') return;
+    var nw = Date.now(); if (nw - lastWheel < 180) return; lastWheel = nw;
+    setWeapon((curW + (e.deltaY > 0 ? 1 : WEAPONS.length - 1)) % WEAPONS.length);
+  });
   Array.prototype.forEach.call(wbtns, function (btn, idx) {
     btn.addEventListener('pointerdown', function (e) { e.preventDefault(); if (state === 'play') setWeapon(idx); });
   });
